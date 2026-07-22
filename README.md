@@ -12,19 +12,19 @@ Import name stays **`tweety`**.
 
 ```python
 # Colab cell
-!pip install -U "git+https://github.com/rajeshbca2020/tweety-ns.git"
+!pip install -U "git+https://github.com/Rajesh2705/tweety-ns.git"
 ```
 
 Or with pip locally:
 
 ```bash
-pip install -U "git+https://github.com/rajeshbca2020/tweety-ns.git"
+pip install -U "git+https://github.com/Rajesh2705/tweety-ns.git"
 ```
 
 Private repo? Use a token:
 
 ```bash
-pip install -U "git+https://<TOKEN>@github.com/rajeshbca2020/tweety-ns.git"
+pip install -U "git+https://<TOKEN>@github.com/Rajesh2705/tweety-ns.git"
 ```
 
 ## Usage
