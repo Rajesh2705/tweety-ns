@@ -702,6 +702,15 @@ class Request:
         response = await self.__get_response__(**request_data)
         return response
 
+    async def create_friendships_all(self, user_ids):
+        request_data = self._builder.create_friendships_all(user_ids)
+        request_data['headers']['content-type'] = f"application/x-www-form-urlencoded"
+        response = await self.__get_response__(**request_data)
+        return response
+
+    async def follow_all(self, user_ids):
+        return await self.create_friendships_all(user_ids)
+
     async def unfollow_user(self, user_id):
         request_data = self._builder.unfollow_user(user_id)
         request_data['headers']['content-type'] = f"application/x-www-form-urlencoded"

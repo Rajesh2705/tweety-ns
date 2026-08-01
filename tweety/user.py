@@ -990,6 +990,33 @@ class UserMethods:
         response['__typename'] = "User"
         return User(self, response)
 
+    async def create_friendships_all(self, user_ids: Union[str, List[Union[str, int, User]]]):
+        """
+
+        :param user_ids: Comma-separated string of user IDs or a list/tuple/set of user IDs/User objects
+        :return:
+        """
+
+        if isinstance(user_ids, (list, tuple, set)):
+            resolved_ids = []
+            for uid in user_ids:
+                resolved_ids.append(str(await self.get_user_id(uid)))
+            user_ids_str = ",".join(resolved_ids)
+        else:
+            user_ids_str = str(user_ids)
+
+        response = await self.http.create_friendships_all(user_ids_str)
+        return response
+
+    async def follow_all(self, user_ids: Union[str, List[Union[str, int, User]]]):
+        """
+
+        :param user_ids: Comma-separated string of user IDs or a list/tuple/set of user IDs/User objects
+        :return:
+        """
+
+        return await self.create_friendships_all(user_ids)
+
     async def unfollow_user(self, user_id: Union[str, int , User]):
         """
 
