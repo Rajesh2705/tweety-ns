@@ -232,7 +232,7 @@ class Request:
                 message="Unknown Error Occurs on Twitter"
             )
 
-        if response_json.get("errors") and not response_json.get('data'):
+        if isinstance(response_json, dict) and response_json.get("errors") and not response_json.get('data'):
             error = response_json['errors'][0]
 
             error_code = error.get("code", 0)
