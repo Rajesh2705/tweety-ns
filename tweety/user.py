@@ -1,6 +1,6 @@
 import datetime
 from typing import Union, Tuple, List
-from .exceptions import ListNotFound, ConversationNotFound
+from .exceptions import ListNotFound, ConversationNotFound, TwitterError
 from .types.grok import GrokConversation
 from .types.inbox import Message, Conversation
 from .utils import create_conversation_id, AuthRequired, find_objects, get_tweet_id, async_list
@@ -10,6 +10,68 @@ from .types import (User, Mention, Inbox, UploadedMedia, SendMessage, Tweet, Boo
                     ShortUser, Place, INBOX_PAGE_TYPE_TRUSTED, Community, ListFollowers, BirdWatch)
 from . import constants
 from .filters import Language
+
+
+def _x_error_text(response) -> str:
+    errors = []
+    if isinstance(response, dict):
+        errors = response.get("errors") or []
+    if not isinstance(errors, list):
+        return ""
+    parts = []
+    for err in errors:
+        if not isinstance(err, dict):
+            continue
+        code = err.get("code")
+        message = err.get("message") or err.get("name") or ""
+        if code or message:
+            parts.append(f"[{code}] {message}".strip())
+    return "; ".join(parts)
+
+
+def _tweet_node(node: dict) -> dict | None:
+    """Return the tweet dict whether X wrapped it or left it bare."""
+    if not isinstance(node, dict):
+        return None
+    inner = node.get("tweet")
+    if isinstance(inner, dict) and (inner.get("rest_id") or inner.get("legacy")):
+        node = inner
+    if node.get("rest_id") or node.get("legacy"):
+        node["__typename"] = "Tweet"
+        return node
+    return None
+
+
+def _prepare_created_tweet(response: dict) -> dict:
+    """Normalize CreateTweet JSON so Tweet() can read tweet_results.result.
+
+    X sometimes omits `result` and puts the tweet directly on `tweet_results`,
+    or nests it under TweetWithVisibilityResults.tweet. An empty object used
+    to raise KeyError: 'result' even when `errors` explained the failure.
+    """
+    if not isinstance(response, dict):
+        raise TwitterError(0, "CreateTweet", response, f"CreateTweet returned {type(response).__name__}")
+
+    data = response.get("data") if isinstance(response.get("data"), dict) else {}
+    created = None
+    for key in ("create_tweet", "notetweet_create", "create_note_tweet"):
+        if isinstance(data.get(key), dict):
+            created = data[key]
+            break
+
+    result = None
+    if isinstance(created, dict):
+        results = created.get("tweet_results") or created.get("tweetResult") or {}
+        if isinstance(results, dict):
+            result = _tweet_node(results.get("result")) or _tweet_node(results)
+
+    if result is None:
+        detail = _x_error_text(response) or "X returned no tweet"
+        raise TwitterError(0, "CreateTweet", response, detail)
+
+    data.setdefault("create_tweet", {})["tweet_results"] = {"result": result}
+    response["data"] = data
+    return response
 
 
 @AuthRequired
@@ -639,7 +701,7 @@ class UserMethods:
         response = await self.http.create_tweet(
             text, files, filter_, reply_to, quote, pool, place, batch_compose, community_id, post_on_timeline
         )
-        response['data']['create_tweet']['tweet_results']['result']['__typename'] = "Tweet"
+        response = _prepare_created_tweet(response)
         return Tweet(self, response, response)
 
     async def schedule_tweet(
