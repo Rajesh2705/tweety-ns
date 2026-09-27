@@ -990,10 +990,11 @@ class UserMethods:
         response['__typename'] = "User"
         return User(self, response)
 
-    async def create_friendships_all(self, user_ids: Union[str, List[Union[str, int, User]]]):
+    async def create_friendships_all(self, user_ids: Union[str, List[Union[str, int, User]]], return_raw=False):
         """
 
         :param user_ids: Comma-separated string of user IDs or a list/tuple/set of user IDs/User objects
+        :param return_raw: If True, returns raw response object containing response.headers, response.status_code, etc.
         :return:
         """
 
@@ -1005,17 +1006,18 @@ class UserMethods:
         else:
             user_ids_str = str(user_ids)
 
-        response = await self.http.create_friendships_all(user_ids_str)
+        response = await self.http.create_friendships_all(user_ids_str, return_raw=return_raw)
         return response
 
-    async def follow_all(self, user_ids: Union[str, List[Union[str, int, User]]]):
+    async def follow_all(self, user_ids: Union[str, List[Union[str, int, User]]], return_raw=False):
         """
 
         :param user_ids: Comma-separated string of user IDs or a list/tuple/set of user IDs/User objects
+        :param return_raw: If True, returns raw response object containing response.headers, response.status_code, etc.
         :return:
         """
 
-        return await self.create_friendships_all(user_ids)
+        return await self.create_friendships_all(user_ids, return_raw=return_raw)
 
     async def unfollow_user(self, user_id: Union[str, int , User]):
         """

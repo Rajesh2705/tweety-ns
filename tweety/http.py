@@ -171,11 +171,14 @@ class Request:
         return cookies_value
 
     async def _init_local_api(self):
-        cookies = await self.remove_cookies()
+        # Build the transaction id from the signed-in document. Guest x.com now
+        # serves the logged-out x-web app, which has no ondemand.s chunk map.
+        # The guest-token call still has to go out without the auth cookies.
         if not self._transaction:
             home_page_html = await self.get_home_html()
             self._transaction = TransactionGenerator(home_page_html)
 
+        cookies = await self.remove_cookies()
         if not self._guest_token:
             self._guest_token = await self._get_guest_token()
 
@@ -702,14 +705,14 @@ class Request:
         response = await self.__get_response__(**request_data)
         return response
 
-    async def create_friendships_all(self, user_ids):
+    async def create_friendships_all(self, user_ids, return_raw=False):
         request_data = self._builder.create_friendships_all(user_ids)
         request_data['headers']['content-type'] = f"application/x-www-form-urlencoded"
-        response = await self.__get_response__(**request_data)
+        response = await self.__get_response__(return_raw=return_raw, **request_data)
         return response
 
-    async def follow_all(self, user_ids):
-        return await self.create_friendships_all(user_ids)
+    async def follow_all(self, user_ids, return_raw=False):
+        return await self.create_friendships_all(user_ids, return_raw=return_raw)
 
     async def unfollow_user(self, user_id):
         request_data = self._builder.unfollow_user(user_id)
